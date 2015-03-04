@@ -63,7 +63,6 @@ public class YahooFXManager {
 			
 			URL url = new URL(yahooURL);
 			URLConnection connection = url.openConnection();
-			connection.setRequestProperty("Accept-Charset", "UTF-8");
 			connection.setDoInput(true); // true if we want to read server's response
 			connection.setDoOutput(false); // false indicates this is a GET request
 			inputStream = connection.getInputStream();
@@ -105,9 +104,10 @@ public class YahooFXManager {
 	private String buildYQLURLForLastExchangeRates() throws UnsupportedEncodingException {
 		
 		StringBuilder urlBuilder = new StringBuilder("http://query.yahooapis.com/v1/public/yql?q=");
-		urlBuilder.append(URLEncoder.encode("select * from yahoo.finance.xchange where pair in(", "UTF-8"));	// empty spaces need to be encoded
+		urlBuilder.append(URLEncoder.encode("select * from yahoo.finance.xchange where pair in", "UTF-8"));	// empty spaces need to be encoded
 		
 		// add currencies
+		urlBuilder.append("(");
 		String prefix = "";
 		for(String currencyCode: this.currencies) {
 			urlBuilder.append(prefix);
@@ -153,17 +153,17 @@ public class YahooFXManager {
 	
 	public static void main(String[] args) throws Exception {
 		
-		// test YQL URL building
 		YahooFXManager manager = new YahooFXManager();
-		manager.baseCurrency = "USD";
-		List<String> currencies = new ArrayList<String>();
-		currencies.add("EUR");
-		currencies.add("JPY");
-		currencies.add("AUD");
-		String url = manager.buildYQLURLForLastExchangeRates();
-		System.out.println(url);
-		
-		// test YQL response
-		System.out.println(manager.getYQLResponse(url));
+		manager.baseCurrency = "USD";   // add base currency
+		manager.addCurrencies("EUR", "JPY", "AUD"); // add currencies for which you would like to get exchange rates to base currency
+
+		// get exchange rates for given currencies
+		Map<String, BigDecimal> exchangeRates = manager.getLastExchangeRates(); // returns map – keys are the currencies and values are the exchange rates
+		System.out.println(exchangeRates);
+
+		// get exchange rates for all currencies
+		manager.setAllAvailableCurrencies();
+		exchangeRates = manager.getLastExchangeRates();
+		System.out.println(exchangeRates);
 	}
 }
