@@ -2,17 +2,13 @@ package com.lubosplavucha.lpyahoofinance;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -39,7 +35,22 @@ public class YahooFXManager {
 		if(baseCurrency == null || currencies.isEmpty())
 			throw new IllegalStateException();
 		
-		return getYQLResponse(buildYQLURLForLastExchangeRates());
+		// build URL to retrieve last exchange rates
+		StringBuilder urlBuilder = new StringBuilder("http://query.yahooapis.com/v1/public/yql?q=");
+		urlBuilder.append(URLEncoder.encode("select * from yahoo.finance.xchange where pair in", "UTF-8"));	// empty spaces need to be encoded
+		
+		// add currencies to URL
+		urlBuilder.append("(");
+		String prefix = "";
+		for(String currencyCode: this.currencies) {
+			urlBuilder.append(prefix);
+			prefix = ",";
+			urlBuilder.append("'" + baseCurrency + currencyCode + "'");
+		}
+		urlBuilder.append(")&env=store://datatables.org/alltableswithkeys");
+		
+		// make HTTP request and return results
+		return getExchangeRatesFromService(urlBuilder.toString());
 	}
 	
 	
@@ -53,7 +64,7 @@ public class YahooFXManager {
 	}
 	
 	
-	private Map<String, BigDecimal> getYQLResponse(String yahooURL) throws Exception {
+	private Map<String, BigDecimal> getExchangeRatesFromService(String yahooURL) throws Exception {
 		
 		Map<String, BigDecimal> exchangeRates = new HashMap<String, BigDecimal>();
 		
@@ -98,25 +109,6 @@ public class YahooFXManager {
 				}
 		}
 		return exchangeRates;
-	}
-
-	
-	private String buildYQLURLForLastExchangeRates() throws UnsupportedEncodingException {
-		
-		StringBuilder urlBuilder = new StringBuilder("http://query.yahooapis.com/v1/public/yql?q=");
-		urlBuilder.append(URLEncoder.encode("select * from yahoo.finance.xchange where pair in", "UTF-8"));	// empty spaces need to be encoded
-		
-		// add currencies
-		urlBuilder.append("(");
-		String prefix = "";
-		for(String currencyCode: this.currencies) {
-			urlBuilder.append(prefix);
-			prefix = ",";
-			urlBuilder.append("'" + baseCurrency + currencyCode + "'");
-		}
-		urlBuilder.append(")&env=store://datatables.org/alltableswithkeys");
-				
-		return urlBuilder.toString();
 	}
 	
 	
